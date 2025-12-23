@@ -1,7 +1,6 @@
-#[allow(unused)]
-
-mod types;
 mod game;
+#[allow(unused)]
+mod types;
 
 #[cfg(test)]
 mod tests {

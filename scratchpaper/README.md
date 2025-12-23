@@ -1,4 +1,5 @@
-# Game for aces hackathon
+# CMBT ("Combat")
+ > Stands for Core, Monarch, Brute, Tank (the names of the pieces)
 
 Board game that's like chess & capture the flag but instead of capturing the
 flag, you have to protect your flag from being touched by the other player's
@@ -23,8 +24,3 @@ flag
   - Tank; Can move 1 spaces horizontally or vertically, but if there is a piece
     that is not the core in front of it, it can dash though it, moving 2 pieces
     in that direction, and removing that piece from the board
-
-Name ideas:
-
-- CMBT ("Combat"), stands for the piece names, Core, Monarch, Brute, Tank
-- "Core Battle"

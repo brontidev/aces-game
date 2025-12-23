@@ -1,7 +1,7 @@
 use std::slice::SliceIndex;
 
-pub const ROWS: usize = 7;
-pub const COLS: usize = 11;
+pub const HEIGHT: usize = 7;
+pub const WIDTH: usize = 11;
 
 pub const PLRS: [Player; 2] = [Player::A, Player::B];
 pub const KINDS: [(u8, PieceKind); 5] = [
@@ -53,11 +53,11 @@ impl Coordinate {
     }
 
     pub fn x(&self) -> u8 {
-        (self.0 % COLS) as u8
+        (self.0 % WIDTH) as u8
     }
 
     pub fn y(&self) -> u8 {
-        (self.0 / COLS) as u8
+        (self.0 / WIDTH) as u8
     }
 
     pub fn xy(&self) -> (u8, u8) {
@@ -67,7 +67,7 @@ impl Coordinate {
     #[inline]
     pub const fn idx(x: u8, y: u8) -> usize {
         // row-major indexing: row * COLS + column
-        (y as usize) * COLS + (x as usize)
+        (y as usize) * WIDTH + (x as usize)
     }
 }
 
@@ -85,17 +85,17 @@ pub enum MoveKind {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Move(Piece, MoveKind);
+pub struct Move(pub Piece, pub MoveKind);
 
 pub mod board {
     use std::ops::Index;
 
     use super::*;
-    type RawBoard = ([Option<u8>; ROWS * COLS], [Piece; 10]);
+    type RawBoard = ([Option<u8>; HEIGHT * WIDTH], [Piece; 10]);
 
     const fn default_board() -> RawBoard {
         let mut board: RawBoard = (
-            [None; ROWS * COLS],
+            [None; HEIGHT * WIDTH],
             [Piece {
                 alive: false,
                 kind: PieceKind::Core,
@@ -108,7 +108,7 @@ pub mod board {
             let plr_i = i / 5;
             let plr = PLRS[plr_i as usize];
             let (x, kind) = KINDS[i as usize % 5];
-            let y = plr_i * (ROWS as u8 - 1);
+            let y = plr_i * (HEIGHT as u8 - 1);
             board.0[Coordinate::idx(x, y)] = Some(i as u8);
             board.1[i as usize] = Piece {
                 alive: true,
@@ -124,7 +124,7 @@ pub mod board {
 
     #[derive(Clone, Copy, Debug)]
     pub struct Board {
-        positions: [Option<u8>; ROWS * COLS],
+        positions: [Option<u8>; HEIGHT * WIDTH],
         pieces: [Piece; 10],
     }
 
@@ -149,6 +149,10 @@ pub mod board {
             };
             plr_i * 5 + kind_i
         }
+
+        fn set(&mut self, Coordinate(idx): Coordinate, piece: Option<Piece>) {
+            self.positions[idx] = piece.map(|p| Self::piece_id(&p) as u8);
+        }
     }
 
     impl Board {
@@ -161,8 +165,8 @@ pub mod board {
             self.positions[idx].map(|piece| &self.pieces[piece as usize])
         }
 
-        pub fn get_coord(&self, piece: Piece) -> Option<Coordinate> {
-            let piece_id = Self::piece_id(&piece);
+        pub fn get_coord(&self, piece: &Piece) -> Option<Coordinate> {
+            let piece_id = Self::piece_id(piece);
             self.positions.iter().enumerate().find_map(|(idx, &pos)| {
                 if pos == Some(piece_id as u8) {
                     Some(Coordinate(idx))
@@ -172,10 +176,29 @@ pub mod board {
             })
         }
 
-        pub fn set(&mut self, Coordinate(idx): Coordinate, piece: Piece) {
-            let piece_id = Self::piece_id(&piece);
-            self.positions[idx] = Some(piece_id as u8);
-            self.pieces[piece_id as usize] = piece;
+        pub fn kill(&mut self, piece: &Piece) {
+            let piece_id = Self::piece_id(piece);
+            let coord = self.get_coord(piece).unwrap();
+            let piece = &mut self.pieces[piece_id as usize];
+            piece.alive = !piece.alive;
+            self.set(coord, None);
+        }
+
+        pub fn r#move(&mut self, piece: &Piece, to: Coordinate) -> bool {
+            let current_coord = self.get_coord(piece);
+            if let Some(current_coord) = current_coord {
+                if self.get_piece(to).is_none() {
+                    self.set(to, Some(*piece));
+                    self.set(current_coord, None);
+                    return true;
+                }
+            }
+            false
+        }
+
+        pub fn is_valid_coord(coord: Coordinate) -> bool {
+            let (x, y) = coord.xy();
+            x < WIDTH as u8 && y < HEIGHT as u8
         }
     }
 }
