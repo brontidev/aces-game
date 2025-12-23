@@ -26,15 +26,19 @@ pub struct Piece(Player, PieceKind);
 #[derive(Clone, Copy, Debug)]
 pub struct Coordinate(usize, usize);
 
+#[derive(Clone, Copy, Debug)]
 pub enum MoveKind {
     Move { to: Coordinate },
     Attack { target: Coordinate },
     MoveAndAttack { to: Coordinate, target: Coordinate },
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Move(Piece, MoveKind);
 
 pub mod board {
+    use std::ops::Index;
+
     use super::*;
     type RawBoard = [Option<Piece>; ROWS * COLS];
 
@@ -86,6 +90,43 @@ pub mod board {
                 core_positions: (Coordinate(5, 0), Coordinate(5, ROWS - 1usize)),
                 positions,
             }
+        }
+
+        pub fn where_core(&self, player: Player) -> &Coordinate {
+            match player {
+                Player::A => &self.core_positions.0,
+                Player::B => &self.core_positions.1,
+            }
+        }
+
+        pub fn get(&self, Coordinate(x, y): Coordinate) -> &Option<Piece> {
+            &self.positions[idx(x, y)]
+        }
+
+        pub fn set(&mut self, Coordinate(x, y): Coordinate, piece: Option<Piece>) {
+            if let Some(Piece(player, PieceKind::Core)) = piece {
+                match player {
+                    Player::A => self.core_positions.0 = Coordinate(x, y),
+                    Player::B => self.core_positions.1 = Coordinate(x, y),
+                }
+            };
+            self.positions[idx(x, y)] = piece;
+        }
+    }
+
+    impl Index<Coordinate> for Board {
+        type Output = Option<Piece>;
+
+        fn index(&self, coordinate: Coordinate) -> &Self::Output {
+            self.get(coordinate)
+        }
+    }
+
+    impl Index<Player> for Board {
+        type Output = Coordinate;
+
+        fn index(&self, player: Player) -> &Self::Output {
+            &self.where_core(player)
         }
     }
 }
